@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini E-Commerce - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Mini E-Commerce</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link active"><i class="fas fa-home"></i> Home</a>
+                <a href="/products.html" class="nav-link"><i class="fas fa-store"></i> Products</a>
+                <a href="/cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i> Cart 
+                    {% if session.cart %}<span class="cart-count">{{ session.cart|length }}</span>{% endif %}
+                </a>
+                <a href="/add-product.html" class="nav-link"><i class="fas fa-plus-circle"></i> Add Product</a>
+                <a href="/analytics/sales" class="nav-link"><i class="fas fa-chart-line"></i> Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Welcome to Mini E-Commerce</h1>
+            <p>Your one-stop shop for amazing products with integrated data analytics</p>
+            <a href="/products" class="btn btn-primary">Shop Now</a>
+            <a href="/analytics/sales" class="btn btn-secondary">View Analytics</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="dashboard-section">
+            <h2><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #4CAF50;">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ product_count }}</h3>
+                        <p>Total Products</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #2196F3;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>${{ "%.2f"|format(revenue) }}</h3>
+                        <p>30-Day Revenue</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #FF9800;">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ transactions }}</h3>
+                        <p>Monthly Transactions</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #9C27B0;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ top_categories|length }}</h3>
+                        <p>Active Categories</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <h2><i class="fas fa-star"></i> System Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3>Dual Database</h3>
+                    <p>SQL Server for transactions + MongoDB for flexible data</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Real-time Analytics</h3>
+                    <p>Pandas & NumPy powered analytics dashboard</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>ETL Pipeline</h3>
+                    <p>Automated data processing with Airflow & DBT</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Big Data Processing</h3>
+                    <p>PySpark for large-scale data analysis</p>
+                </div>
+            </div>
+        </section>
+
+        {% if top_categories %}
+        <section class="categories-section">
+            <h2><i class="fas fa-tags"></i> Top Categories</h2>
+            <div class="categories-list">
+                {% for category in top_categories %}
+                <div class="category-card">
+                    <h3>{{ category.category }}</h3>
+                    <p>{{ category.product_count }} products</p>
+                    <a href="/products?category={{ category.category }}" class="btn btn-small">View Products</a>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="quick-actions">
+            <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+            <div class="action-buttons">
+                <a href="/products" class="btn btn-action">
+                    <i class="fas fa-store"></i> Browse Products
+                </a>
+                <a href="/add-product" class="btn btn-action">
+                    <i class="fas fa-plus"></i> Add New Product
+                </a>
+                <a href="/analytics/sales" class="btn btn-action">
+                    <i class="fas fa-chart-pie"></i> View Analytics
+                </a>
+                <a href="/api/products/json" class="btn btn-action">
+                    <i class="fas fa-code"></i> API Explorer
+                </a>
+            </div>
+        </section>
+
+        <section class="tech-stack">
+            <h2><i class="fas fa-layer-group"></i> Technology Stack</h2>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <i class="fab fa-python"></i>
+                    <span>Python & Flask</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-database"></i>
+                    <span>SQL Server</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-server"></i>
+                    <span>MongoDB</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Pandas & NumPy</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-wind"></i>
+                    <span>Apache Airflow</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-bolt"></i>
+                    <span>PySpark</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Mini E-Commerce System</h3>
+                <p>A complete e-commerce solution with full-stack development and data engineering capabilities.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="/products">Products</a>
+                <a href="/cart">Shopping Cart</a>
+                <a href="/analytics/sales">Analytics</a>
+                <a href="/add-product">Add Product</a>
+            </div>
+            <div class="footer-section">
+                <h3>Data Engineering</h3>
+                <span>ETL Pipelines</span>
+                <span>Data Warehousing</span>
+                <span>Real-time Analytics</span>
+                <span>Big Data Processing</span>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Mini E-Commerce System. Built with Flask, SQL Server, MongoDB, and modern data engineering tools.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Update cart count dynamically
+        function updateCartCount() {
+            fetch('/api/cart/count')
+                .then(response => response.json())
+                .then(data => {
+                    const cartCountElement = document.querySelector('.cart-count');
+                    if (cartCountElement) {
+                        cartCountElement.textContent = data.count;
+                    }
+                });
+        }
+
+        // Update cart count every 30 seconds
+        setInterval(updateCartCount, 30000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', updateCartCount);
+    </script>
+</body>
+</html>

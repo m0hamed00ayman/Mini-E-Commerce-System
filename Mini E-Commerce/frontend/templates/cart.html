@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Mini E-Commerce</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Mini E-Commerce</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/products" class="nav-link"><i class="fas fa-store"></i> Products</a>
+                <a href="/cart" class="nav-link active"><i class="fas fa-shopping-cart"></i> Cart 
+                    <span class="cart-count">{{ item_count }}</span>
+                </a>
+                <a href="/add-product" class="nav-link"><i class="fas fa-plus-circle"></i> Add Product</a>
+                <a href="/analytics/sales" class="nav-link"><i class="fas fa-chart-line"></i> Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-shopping-cart"></i> Shopping Cart</h1>
+            <p>Review your items and proceed to checkout</p>
+        </div>
+
+        {% if cart_items %}
+        <div class="cart-layout">
+            <div class="cart-items-section">
+                <div class="section-header">
+                    <h2>Your Items ({{ item_count }})</h2>
+                    <button class="btn btn-small btn-clear" onclick="clearCart()">
+                        <i class="fas fa-trash"></i> Clear Cart
+                    </button>
+                </div>
+                
+                <div class="cart-items-list">
+                    {% for item in cart_items %}
+                    <div class="cart-item" id="item-{{ item.product_id }}">
+                        <div class="cart-item-image">
+                            <div class="image-placeholder-small">
+                                <i class="fas fa-box"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-item-details">
+                            <h3>{{ item.name }}</h3>
+                            <div class="item-meta">
+                                <span class="item-price">${{ "%.2f"|format(item.price) }} each</span>
+                                {% if item.discount_info.discount_rate > 0 %}
+                                <span class="item-discount">
+                                    <i class="fas fa-percentage"></i> {{ "%.0f"|format(item.discount_info.discount_rate) }}% discount
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="cart-item-quantity">
+                            <button class="qty-btn" onclick="updateQuantity('{{ item.product_id }}', -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" 
+                                   value="{{ item.quantity }}" 
+                                   min="1" 
+                                   id="qty-{{ item.product_id }}"
+                                   onchange="updateQuantityInput('{{ item.product_id }}', this.value)">
+                            <button class="qty-btn" onclick="updateQuantity('{{ item.product_id }}', 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="cart-item-price">
+                            <div class="original-price">
+                                ${{ "%.2f"|format(item.price * item.quantity) }}
+                            </div>
+                            <div class="final-price">
+                                ${{ "%.2f"|format(item.discount_info.total) }}
+                            </div>
+                            {% if item.discount_info.discount_rate > 0 %}
+                            <div class="savings">
+                                Save ${{ "%.2f"|format(item.discount_info.savings) }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="cart-item-actions">
+                            <button class="btn-remove" onclick="removeItem('{{ item.product_id }}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="continue-shopping">
+                    <a href="/products" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+            
+            <div class="cart-summary-section">
+                <div class="summary-card">
+                    <h2><i class="fas fa-receipt"></i> Order Summary</h2>
+                    
+                    <div class="summary-details">
+                        <div class="summary-row">
+                            <span>Subtotal ({{ item_count }} items)</span>
+                            <span>${{ "%.2f"|format(subtotal) }}</span>
+                        </div>
+                        
+                        <div class="summary-row">
+                            <span>Discounts</span>
+                            <span class="discount-amount">-${{ "%.2f"|format(total_discount) }}</span>
+                        </div>
+                        
+                        <div class="summary-row">
+                            <span>Estimated Tax</span>
+                            <span>${{ "%.2f"|format(subtotal * 0.08) }}</span>
+                        </div>
+                        
+                        <div class="summary-divider"></div>
+                        
+                        <div class="summary-row total">
+                            <span>Total Amount</span>
+                            <span class="total-amount">${{ "%.2f"|format(final_total) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-actions">
+                        <a href="/checkout" class="btn btn-primary btn-checkout">
+                            <i class="fas fa-lock"></i> Proceed to Checkout
+                        </a>
+                    </div>
+                    
+                    <div class="payment-methods">
+                        <h4><i class="fas fa-credit-card"></i> Accepted Payment Methods</h4>
+                        <div class="payment-icons">
+                            <i class="fab fa-cc-visa"></i>
+                            <i class="fab fa-cc-mastercard"></i>
+                            <i class="fab fa-cc-amex"></i>
+                            <i class="fab fa-cc-paypal"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if category_dist %}
+                <div class="cart-analytics">
+                    <h3><i class="fas fa-chart-pie"></i> Cart Analytics</h3>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <div class="analytics-label">Items in Cart</div>
+                            <div class="analytics-value">{{ item_count }}</div>
+                        </div>
+                        <div class="analytics-item">
+                            <div class="analytics-label">Total Savings</div>
+                            <div class="analytics-value">${{ "%.2f"|format(total_discount) }}</div>
+                        </div>
+                        <div class="analytics-item">
+                            <div class="analytics-label">Average Price/Item</div>
+                            <div class="analytics-value">${{ "%.2f"|format(subtotal/item_count if item_count > 0 else 0) }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="category-breakdown">
+                        <h4>Category Distribution</h4>
+                        {% for category, count in category_dist.items() %}
+                        <div class="category-item">
+                            <span>{{ category }}</span>
+                            <span>{{ count }} items</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="security-note">
+                    <i class="fas fa-shield-alt"></i>
+                    <div>
+                        <h4>Secure Shopping</h4>
+                        <p>Your payment information is encrypted and secure.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-cart">
+            <div class="empty-cart-icon">
+                <i class="fas fa-shopping-cart fa-4x"></i>
+            </div>
+            <h2>Your cart is empty</h2>
+            <p>Add some amazing products to get started!</p>
+            <a href="/products" class="btn btn-primary">
+                <i class="fas fa-store"></i> Browse Products
+            </a>
+        </div>
+        {% endif %}
+        
+        {% if cart_items %}
+        <div class="cart-features">
+            <h2><i class="fas fa-star"></i> Cart Features</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <i class="fas fa-percentage"></i>
+                    <h3>Automatic Discounts</h3>
+                    <p>Volume-based discounts calculated in real-time using NumPy</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Real-time Analytics</h3>
+                    <p>Cart analytics powered by Pandas data processing</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-database"></i>
+                    <h3>Dual Database Support</h3>
+                    <p>Items from both SQL Server and MongoDB</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-sync-alt"></i>
+                    <h3>Live Updates</h3>
+                    <p>Quantity changes update totals instantly</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Mini E-Commerce System. Cart analytics powered by NumPy calculations.</p>
+        </div>
+    </footer>
+
+    <script>
+        function updateQuantity(productId, change) {
+            const input = document.getElementById('qty-' + productId);
+            let newQty = parseInt(input.value) + change;
+            
+            if (newQty < 1) {
+                removeItem(productId);
+                return;
+            }
+            
+            input.value = newQty;
+            updateCartItem(productId, newQty);
+        }
+        
+        function updateQuantityInput(productId, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty < 1) {
+                newQty = 1;
+                document.getElementById('qty-' + productId).value = 1;
+            }
+            updateCartItem(productId, newQty);
+        }
+        
+        function updateCartItem(productId, quantity) {
+            fetch('/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: quantity
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the item display
+                    const itemElement = document.getElementById('item-' + productId);
+                    if (itemElement) {
+                        const priceElement = itemElement.querySelector('.final-price');
+                        const savingsElement = itemElement.querySelector('.savings');
+                        const discountElement = itemElement.querySelector('.item-discount');
+                        
+                        if (priceElement) priceElement.textContent = '$' + data.item.discount_info.total.toFixed(2);
+                        if (savingsElement) savingsElement.textContent = 'Save $' + data.item.discount_info.savings.toFixed(2);
+                        if (discountElement && data.item.discount_info.discount_rate > 0) {
+                            discountElement.innerHTML = `<i class="fas fa-percentage"></i> ${data.item.discount_info.discount_rate}% discount`;
+                        }
+                    }
+                    
+                    // Reload page to update totals
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    alert('Error updating cart: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating cart');
+            });
+        }
+        
+        function removeItem(productId) {
+            if (confirm('Remove this item from cart?')) {
+                fetch('/cart/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        product_id: productId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('item-' + productId).remove();
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 300);
+                    } else {
+                        alert('Error removing item: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error removing item');
+                });
+            }
+        }
+        
+        function clearCart() {
+            if (confirm('Clear all items from cart?')) {
+                fetch('/cart/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error clearing cart: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error clearing cart');
+                });
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add input validation
+            const quantityInputs = document.querySelectorAll('input[type="number"]');
+            quantityInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    if (this.value < 1) {
+                        this.value = 1;
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

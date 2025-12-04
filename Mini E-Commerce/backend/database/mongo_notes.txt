@@ -1,0 +1,175 @@
+MongoDB Configuration for Mini E-Commerce System
+================================================
+
+1. MongoDB Collections Structure:
+
+Collection: user_products
+- Purpose: Store user-submitted products before ETL processing
+- Schema:
+  {
+    "_id": ObjectId,
+    "name": String,
+    "description": String,
+    "price": Number,
+    "category": String,
+    "stock_quantity": Number,
+    "vendor": String,
+    "rating": Number,
+    "tags": [String],
+    "user_id": String,
+    "submitted_at": ISODate,
+    "status": String,  // "pending", "approved", "rejected"
+    "source": String   // "user_submitted"
+  }
+
+Collection: product_reviews
+- Purpose: Store customer reviews (NoSQL for flexible schema)
+- Schema:
+  {
+    "_id": ObjectId,
+    "product_id": String,
+    "user_id": String,
+    "rating": Number (1-5),
+    "review_text": String,
+    "helpful_votes": Number,
+    "created_at": ISODate,
+    "images": [String]  // Array of image URLs
+  }
+
+Collection: user_sessions
+- Purpose: Store user session data
+- Schema:
+  {
+    "_id": ObjectId,
+    "session_id": String,
+    "user_id": String,
+    "actions": [
+      {
+        "action_type": String,
+        "product_id": String,
+        "timestamp": ISODate,
+        "metadata": Object
+      }
+    ],
+    "created_at": ISODate,
+    "last_active": ISODate
+  }
+
+Collection: analytics_events
+- Purpose: Store analytics events
+- Schema:
+  {
+    "_id": ObjectId,
+    "event_type": String,  // "page_view", "add_to_cart", "purchase"
+    "user_id": String,
+    "product_id": String,
+    "metadata": Object,
+    "timestamp": ISODate
+  }
+
+2. MongoDB Setup Commands:
+
+# Connect to MongoDB
+mongo
+
+# Create database
+use ecommerce
+
+# Create collections
+db.createCollection("user_products")
+db.createCollection("product_reviews")
+db.createCollection("user_sessions")
+db.createCollection("analytics_events")
+
+# Create indexes
+db.user_products.createIndex({ "status": 1 })
+db.user_products.createIndex({ "submitted_at": -1 })
+db.product_reviews.createIndex({ "product_id": 1, "rating": -1 })
+db.user_sessions.createIndex({ "session_id": 1 }, { unique: true })
+db.analytics_events.createIndex({ "timestamp": -1 })
+
+# Insert sample user product
+db.user_products.insertOne({
+  "name": "Handmade Ceramic Mug",
+  "description": "Beautiful handmade ceramic mug with unique design",
+  "price": 24.99,
+  "category": "Home & Kitchen",
+  "stock_quantity": 25,
+  "vendor": "Artisan Crafts",
+  "rating": 4.8,
+  "tags": ["handmade", "ceramic", "coffee", "mug"],
+  "user_id": "user123",
+  "submitted_at": new Date(),
+  "status": "pending",
+  "source": "user_submitted"
+})
+
+3. Python Connection Examples:
+
+# Using PyMongo
+from pymongo import MongoClient
+
+client = MongoClient('localhost', 27017)
+db = client['ecommerce']
+
+# Insert document
+db.user_products.insert_one({
+    'name': 'Test Product',
+    'price': 19.99,
+    'category': 'Test'
+})
+
+# Find documents
+products = list(db.user_products.find({'status': 'pending'}))
+
+# Update document
+db.user_products.update_one(
+    {'_id': product_id},
+    {'$set': {'status': 'approved'}}
+)
+
+# Aggregate example
+pipeline = [
+    {'$match': {'status': 'approved'}},
+    {'$group': {
+        '_id': '$category',
+        'avg_price': {'$avg': '$price'},
+        'count': {'$sum': 1}
+    }}
+]
+results = db.user_products.aggregate(pipeline)
+
+4. MongoDB Atlas (Cloud) Configuration:
+
+If using MongoDB Atlas:
+Connection String: mongodb+srv://username:password@cluster.mongodb.net/ecommerce?retryWrites=true&w=majority
+
+Update .env file:
+MONGODB_HOST=cluster.mongodb.net
+MONGODB_PORT=27017
+MONGODB_USERNAME=your_username
+MONGODB_PASSWORD=your_password
+MONGODB_AUTH_SOURCE=admin
+
+5. Data Retention Policy:
+
+- user_products: Keep all documents (archive old to separate collection)
+- product_reviews: Keep indefinitely
+- user_sessions: Delete after 30 days
+- analytics_events: Delete after 90 days (or archive)
+
+6. Backup Strategy:
+
+# Daily backup command
+mongodump --host localhost --port 27017 --db ecommerce --out /backups/mongodb/$(date +%Y%m%d)
+
+# Restore command
+mongorestore --host localhost --port 27017 --db ecommerce /backups/mongodb/20240101/ecommerce
+
+7. Performance Tips:
+
+1. Use appropriate indexes for query patterns
+2. Limit returned fields with projection
+3. Use $match early in aggregation pipelines
+4. Monitor slow queries with db.setProfilingLevel(1, 100)
+5. Use connection pooling in application

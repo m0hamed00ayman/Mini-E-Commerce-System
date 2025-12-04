@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Mini E-Commerce</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Mini E-Commerce</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/products" class="nav-link active"><i class="fas fa-store"></i> Products</a>
+                <a href="/cart" class="nav-link"><i class="fas fa-shopping-cart"></i> Cart 
+                    {% if session.cart %}<span class="cart-count">{{ session.cart|length }}</span>{% endif %}
+                </a>
+                <a href="/add-product" class="nav-link"><i class="fas fa-plus-circle"></i> Add Product</a>
+                <a href="/analytics/sales" class="nav-link"><i class="fas fa-chart-line"></i> Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-boxes"></i> Product Catalog</h1>
+            <p>Browse our collection of {{ total_products }} products</p>
+            <div class="header-actions">
+                <a href="/add-product" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Product
+                </a>
+                <a href="/analytics/sales" class="btn btn-secondary">
+                    <i class="fas fa-chart-bar"></i> View Analytics
+                </a>
+            </div>
+        </div>
+
+        {% if price_stats %}
+        <section class="analytics-summary">
+            <h2><i class="fas fa-chart-pie"></i> Price Analytics</h2>
+            <div class="stats-cards">
+                <div class="stat-card-small">
+                    <div class="stat-label">Average Price</div>
+                    <div class="stat-value">${{ "%.2f"|format(price_stats.avg_price) }}</div>
+                </div>
+                <div class="stat-card-small">
+                    <div class="stat-label">Price Range</div>
+                    <div class="stat-value">${{ "%.2f"|format(price_stats.min_price) }} - ${{ "%.2f"|format(price_stats.max_price) }}</div>
+                </div>
+                <div class="stat-card-small">
+                    <div class="stat-label">Standard Deviation</div>
+                    <div class="stat-value">${{ "%.2f"|format(price_stats.price_std) }}</div>
+                </div>
+                <div class="stat-card-small">
+                    <div class="stat-label">Total Products</div>
+                    <div class="stat-value">{{ total_products }}</div>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="products-controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search products...">
+                <button onclick="searchProducts()"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="filter-controls">
+                <select id="categoryFilter" onchange="filterProducts()">
+                    <option value="">All Categories</option>
+                    {% if category_dist %}
+                        {% for category, count in category_dist.items() %}
+                            <option value="{{ category }}">{{ category }} ({{ count }})</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <select id="sortFilter" onchange="sortProducts()">
+                    <option value="name">Sort by Name</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="rating">Highest Rated</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="products-grid" id="productsContainer">
+            {% for product in products %}
+            <div class="product-card" data-category="{{ product.category|lower }}" data-price="{{ product.price }}" data-rating="{{ product.rating }}">
+                <div class="product-badge">
+                    {% if product.source == 'mongodb' %}
+                    <span class="badge badge-mongo">User Submitted</span>
+                    {% else %}
+                    <span class="badge badge-sql">Vendor</span>
+                    {% endif %}
+                </div>
+                
+                <div class="product-image">
+                    {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                    {% else %}
+                    <div class="image-placeholder">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="product-content">
+                    <h3 class="product-title">{{ product.name }}</h3>
+                    <p class="product-description">{{ product.description[:100] }}{% if product.description|length > 100 %}...{% endif %}</p>
+                    
+                    <div class="product-meta">
+                        <span class="product-category">
+                            <i class="fas fa-tag"></i> {{ product.category }}
+                        </span>
+                        <span class="product-rating">
+                            <i class="fas fa-star"></i> {{ "%.1f"|format(product.rating) }}/5
+                        </span>
+                    </div>
+                    
+                    <div class="product-stock">
+                        <i class="fas fa-boxes"></i> 
+                        {% if product.stock_quantity > 10 %}
+                        <span class="stock-in">In Stock: {{ product.stock_quantity }}</span>
+                        {% elif product.stock_quantity > 0 %}
+                        <span class="stock-low">Low Stock: {{ product.stock_quantity }}</span>
+                        {% else %}
+                        <span class="stock-out">Out of Stock</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-main">${{ "%.2f"|format(product.price) }}</span>
+                            {% if product.sales_count and product.sales_count > 0 %}
+                            <span class="sales-count">{{ product.sales_count }} sold</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="product-actions">
+                            <button class="btn btn-small btn-cart" onclick="addToCart('{{ product.id }}')">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button class="btn btn-small btn-view" onclick="viewProduct('{{ product.id }}')">
+                                <i class="fas fa-eye"></i> Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-products">
+                <i class="fas fa-box-open fa-3x"></i>
+                <h3>No products found</h3>
+                <p>Add your first product to get started!</p>
+                <a href="/add-product" class="btn btn-primary">Add Product</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if category_dist %}
+        <section class="category-distribution">
+            <h2><i class="fas fa-chart-bar"></i> Category Distribution</h2>
+            <div class="category-chart">
+                {% for category, count in category_dist.items() %}
+                <div class="category-bar">
+                    <div class="bar-label">{{ category }}</div>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="width: {{ (count / total_products * 100)|round }}%;"></div>
+                    </div>
+                    <div class="bar-count">{{ count }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="data-source-info">
+            <h3><i class="fas fa-database"></i> Data Sources</h3>
+            <div class="source-cards">
+                <div class="source-card">
+                    <div class="source-header sql">
+                        <i class="fas fa-server"></i>
+                        <h4>SQL Server</h4>
+                    </div>
+                    <p>Primary transactional database for vendor products, inventory, and sales data.</p>
+                    <div class="source-stats">
+                        <span><i class="fas fa-box"></i> Vendor Products</span>
+                        <span><i class="fas fa-exchange-alt"></i> Real-time Updates</span>
+                    </div>
+                </div>
+                
+                <div class="source-card">
+                    <div class="source-header mongo">
+                        <i class="fas fa-leaf"></i>
+                        <h4>MongoDB</h4>
+                    </div>
+                    <p>NoSQL database for user-submitted products, reviews, and flexible data structures.</p>
+                    <div class="source-stats">
+                        <span><i class="fas fa-user"></i> User Content</span>
+                        <span><i class="fas fa-shapes"></i> Flexible Schema</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Mini E-Commerce System. Products powered by SQL Server & MongoDB.</p>
+        </div>
+    </footer>
+
+    <script>
+        function addToCart(productId) {
+            const quantity = prompt('Enter quantity:', '1');
+            if (quantity && !isNaN(quantity) && parseInt(quantity) > 0) {
+                fetch('/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: parseInt(quantity)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Product added to cart!');
+                        updateCartCount();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error adding to cart');
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        function viewProduct(productId) {
+            // In a real application, this would navigate to a product detail page
+            alert('Viewing product ' + productId + '\n\nIn a full implementation, this would show detailed product information.');
+        }
+
+        function searchProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const productCards = document.querySelectorAll('.product-card');
+            
+            productCards.forEach(card => {
+                const title = card.querySelector('.product-title').textContent.toLowerCase();
+                const description = card.querySelector('.product-description').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function filterProducts() {
+            const selectedCategory = document.getElementById('categoryFilter').value.toLowerCase();
+            const productCards = document.querySelectorAll('.product-card');
+            
+            productCards.forEach(card => {
+                const category = card.getAttribute('data-category');
+                
+                if (!selectedCategory || category === selectedCategory) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function sortProducts() {
+            const sortBy = document.getElementById('sortFilter').value;
+            const container = document.getElementById('productsContainer');
+            const productCards = Array.from(container.querySelectorAll('.product-card'));
+            
+            productCards.sort((a, b) => {
+                switch(sortBy) {
+                    case 'price_asc':
+                        return parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price'));
+                    case 'price_desc':
+                        return parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price'));
+                    case 'rating':
+                        return parseFloat(b.getAttribute('data-rating')) - parseFloat(a.getAttribute('data-rating'));
+                    default: // name
+                        return a.querySelector('.product-title').textContent.localeCompare(b.querySelector('.product-title').textContent);
+                }
+            });
+            
+            // Reappend sorted cards
+            productCards.forEach(card => container.appendChild(card));
+        }
+
+        function updateCartCount() {
+            const cartCountElement = document.querySelector('.cart-count');
+            if (cartCountElement) {
+                fetch('/api/cart/count')
+                    .then(response => response.json())
+                    .then(data => {
+                        cartCountElement.textContent = data.count;
+                    });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+            
+            // Add event listener for search input
+            document.getElementById('searchInput').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    searchProducts();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

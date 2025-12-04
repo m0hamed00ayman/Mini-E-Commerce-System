@@ -1,0 +1,135 @@
+# dbt_project.yml
+name: 'ecommerce_dbt_project'
+version: '1.0.0'
+config-version: 2
+
+profile: 'ecommerce_sql_server'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["data"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  ecommerce_dbt_project:
+    # Configuration for data warehouse models
+    materialized: table
+    warehouse:
+      database: "ECommerceWarehouse"
+      schema: "dbt"
+    
+    staging:
+      +schema: staging
+      +materialized: view
+      
+    marts:
+      +schema: marts
+      +materialized: table
+    
+    core:
+      +schema: core
+      +materialized: incremental
+      
+tests:
+  +warn_if: ">1000"
+  +error_if: ">5000"
+
+vars:
+  start_date: '2024-01-01'
+  default_incremental_strategy: 'merge'
+
+seeds:
+  +enabled: true
+  +schema: raw
+  +quote_columns: true
+
+snapshots:
+  +enabled: true
+  +schema: snapshots
+  +target_schema: snapshots
+  +unique_key: id
+  +strategy: timestamp
+  +updated_at: updated_at
+
+on-run-start:
+  - "{{ log('Starting dbt run for ecommerce project', info=true) }}"
+  - "{{ log('Environment: ' ~ target.name, info=true) }}"
+
+on-run-end:
+  - "{{ log('dbt run completed successfully!', info=true) }}"
+  - "{{ log('Models created: ' ~ results | length, info=true) }}"
+
+# SQL Server specific configurations
+dispatch:
+  - macro_namespace: dbt
+    search_order: ['ecommerce_dbt_project', 'dbt']
+
+# Model configurations
+models:
+  ecommerce_dbt_project:
+    staging:
+      +persist_docs:
+        relation: true
+        columns: true
+    marts:
+      +persist_docs:
+        relation: true
+        columns: true
+    core:
+      +persist_docs:
+        relation: true
+        columns: true
+
+# Sources configuration
+sources:
+  - name: ecommerce_raw
+    database: ECommerceDB
+    schema: dbo
+    tables:
+      - name: products
+        description: "Raw products data from SQL Server"
+      - name: sales
+        description: "Sales transaction data"
+      - name: sale_items
+        description: "Individual sale line items"
+      - name: users
+        description: "User account information"
+      - name: cart
+        description: "Shopping cart data"
+
+# Exposures for BI tools
+exposures:
+  - name: sales_dashboard
+    type: dashboard
+    maturity: high
+    owner:
+      name: "Analytics Team"
+      email: "analytics@ecommerce.com"
+    depends_on:
+      - ref('dim_product')
+      - ref('dim_user')
+      - ref('fact_sales')
+    description: "Main sales dashboard for business intelligence"
+    
+  - name: inventory_report
+    type: analysis
+    maturity: medium
+    owner:
+      name: "Operations Team"
+      email: "operations@ecommerce.com"
+    depends_on:
+      - ref('dim_product')
+      - source('ecommerce_raw', 'products')
+    description: "Inventory management and reporting"
+
+# Documentation
+docs:
+  show: true
+  node_color: "#4CAF50"

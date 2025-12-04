@@ -1,0 +1,47 @@
+mini_ecommerce_project/
+├── app.py
+├── requirements.txt
+├── README.md
+├── .env.example
+├── backend/
+│   ├── api/
+│   │   └── flask_app.py
+│   ├── database/
+│   │   ├── schema.sql
+│   │   ├── mongo_notes.txt
+│   │   └── connection_examples.py
+│   └── models/
+│       ├── users.py
+│       ├── products.py
+│       └── cart.py
+├── frontend/
+│   ├── templates/
+│   │   ├── index.html
+│   │   ├── products.html
+│   │   ├── add_product.html
+│   │   ├── cart.html
+│   │   └── checkout.html
+│   └── static/
+│       └── styles.css
+├── data_engineering/
+│   ├── airflow/
+│   │   └── sync_products_dag.py
+│   ├── dbt_project/
+│   │   ├── dbt_project.yml
+│   │   └── models/
+│   │       ├── dim_product.sql
+│   │       ├── dim_user.sql
+│   │       └── sales_fact.sql
+│   ├── pyspark/
+│   │   └── spark_sales_job.py
+│   └── warehouse/
+│       ├── dim_product.sql
+│       ├── dim_user.sql
+│       └── fact_sales.sql
+├── analytics/
+│   ├── sales_analysis.ipynb
+│   └── charts/
+│       └── sales_trends.png
+└── documentation/
+    ├── Full_Documentation.pdf
+    └── Presentation.pptx
