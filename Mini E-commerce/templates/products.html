@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script>
+        function toggleCategory(catId){
+            let cat = document.getElementById(catId);
+            cat.classList.toggle('active');
+        }
+    </script>
+</head>
+<body>
+    <div class="navbar">
+        <span>Mini E-Commerce</span>
+        <div>
+            {% if is_logged_in %}
+                <a href="/add-product">Add Product</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <h1>All Products</h1>
+
+    {% for category, items in categorized.items() %}
+        <div class="category" id="cat{{ loop.index }}">
+            <h2 class="category-title" onclick="toggleCategory('cat{{ loop.index }}')">{{ category }}</h2>
+            <div class="products-container">
+                {% for product in items %}
+                    <div class="product-card">
+                        <h3>{{ product.name }}</h3>
+                        <p>Price: ${{ product.price }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</body>
+</html>
